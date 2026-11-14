@@ -1,0 +1,33 @@
+"""Hash de senhas com scrypt, sem dependências externas."""
+import base64
+import hashlib
+import hmac
+import secrets
+
+N, R, P = 2**14, 8, 1
+TAMANHO = 32
+
+
+def _b64(dados: bytes) -> str:
+    return base64.b64encode(dados).decode("ascii")
+
+
+def gerar_hash(senha: str) -> str:
+    sal = secrets.token_bytes(16)
+    resultado = hashlib.scrypt(senha.encode(), salt=sal, n=N, r=R, p=P, dklen=TAMANHO)
+    return f"scrypt${N}${R}${P}${_b64(sal)}${_b64(resultado)}"
+
+
+def conferir(senha: str, hash_guardado: str) -> bool:
+    try:
+        _, n, r, p, sal, esperado = hash_guardado.split("$")
+        resultado = hashlib.scrypt(
+            senha.encode(), salt=base64.b64decode(sal), n=int(n), r=int(r), p=int(p), dklen=TAMANHO
+        )
+        esperado_bytes = base64.b64decode(esperado)
+    except (ValueError, TypeError):
+        return False
+    return hmac.compare_digest(resultado, esperado_bytes)
+
+
+HASH_FALSO = gerar_hash(secrets.token_urlsafe(16))
