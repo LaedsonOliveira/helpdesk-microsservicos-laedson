@@ -1,19 +1,11 @@
 """Configurações do microserviço lidas do ambiente."""
-import logging
 import os
-import secrets
-
-log = logging.getLogger("usuarios")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./usuarios.db")
 
 JWT_SEGREDO = os.getenv("JWT_SEGREDO", "")
 if len(JWT_SEGREDO) < 32:
-    if JWT_SEGREDO:
-        log.warning("JWT_SEGREDO tem menos de 32 caracteres; usando um segredo aleatório.")
-    else:
-        log.warning("JWT_SEGREDO não definido; tokens serão invalidados quando o serviço reiniciar.")
-    JWT_SEGREDO = secrets.token_urlsafe(48)
+    raise RuntimeError("JWT_SEGREDO deve ser configurado com pelo menos 32 caracteres.")
 
 JWT_ALGORITMO = "HS256"
 JWT_EMISSOR = "helpdesk-ti"

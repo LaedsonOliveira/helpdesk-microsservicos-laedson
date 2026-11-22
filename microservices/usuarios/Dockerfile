@@ -1,16 +1,14 @@
 FROM python:3.12-slim
 
-RUN useradd --create-home --uid 10001 helpdesk \
-    && mkdir /dados \
-    && chown helpdesk /dados
+RUN useradd --create-home --uid 10001 helpdesk
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY --chown=helpdesk:helpdesk requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app ./app
+COPY --chown=helpdesk:helpdesk app ./app
 
 USER helpdesk
 
