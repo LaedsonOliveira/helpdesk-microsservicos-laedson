@@ -1,0 +1,32 @@
+"""Conexão com o banco de dados exclusivo do microserviço de Chamados."""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+from app.config import DATABASE_URL
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    pool_pre_ping=True,
+)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db():
+    """Abre uma sessão por requisição e fecha no final."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def inicializar_banco() -> None:
+    """Cria somente as tabelas pertencentes a este serviço."""
+    from app import model  # noqa: F401
+
+    Base.metadata.create_all(bind=engine)

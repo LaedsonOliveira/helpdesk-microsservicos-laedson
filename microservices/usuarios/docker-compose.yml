@@ -4,6 +4,9 @@ services:
       context: .
     ports:
       - "127.0.0.1:8001:8000"
+    networks:
+      - default
+      - helpdesk
     env_file:
       - .env
     environment:
@@ -50,3 +53,8 @@ services:
 
 volumes:
   usuarios_dados:
+
+networks:
+  helpdesk:
+    name: helpdesk-rede
+    external: true
