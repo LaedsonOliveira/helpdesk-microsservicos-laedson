@@ -8,9 +8,13 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_usuarios:5432/${POSTGRES_DB}
+      JWT_SEGREDO: ${JWT_SEGREDO:?Configure JWT_SEGREDO no arquivo .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Configure ADMIN_EMAIL no arquivo .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Configure ADMIN_PASSWORD no arquivo .env}
     depends_on:
       db_usuarios:
         condition: service_healthy
+    restart: unless-stopped
     read_only: true
     tmpfs:
       - /tmp
@@ -18,6 +22,16 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   db_usuarios:
     image: postgres:17
@@ -32,6 +46,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 volumes:
   usuarios_dados:
