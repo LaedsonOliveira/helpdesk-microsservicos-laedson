@@ -1,0 +1,61 @@
+services:
+  chamados:
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:8003:8000"
+    networks:
+      - default
+      - helpdesk
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_chamados:5432/${POSTGRES_DB}
+      JWT_SEGREDO: ${JWT_SEGREDO:?Configure JWT_SEGREDO no arquivo .env}
+      USUARIOS_URL: ${USUARIOS_URL:-http://usuarios:8000}
+      INVENTARIO_URL: ${INVENTARIO_URL:-http://inventario:8000}
+      TIMEOUT_SERVICOS_SEGUNDOS: ${TIMEOUT_SERVICOS_SEGUNDOS:-2}
+    depends_on:
+      db_chamados:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/saude', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  db_chamados:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - chamados_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  chamados_dados:
+
+networks:
+  helpdesk:
+    name: helpdesk-rede
+    external: true
